@@ -21,6 +21,8 @@ spec:
     value: src/main/docker/Dockerfile.jvm.staged
   - name: git-url
     value: '{{source_url}}'
+  - name: hermetic
+    value: true
   - name: output-image
     value: quay.io/redhat-user-workloads/rh-ee-tcarter-tenant/domain-proxy/devfile-sample-code-with-quarkus:{{revision}}
   - name: revision

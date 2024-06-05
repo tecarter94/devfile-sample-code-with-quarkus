@@ -181,10 +181,9 @@ spec:
         echo "Cannot find Dockerfile $DOCKERFILE"
         exit 1
       fi
-      if [ -n "$JVM_BUILD_WORKSPACE_ARTIFACT_CACHE_PORT_80_TCP_ADDR" ] && grep -q '^\s*RUN \(./\)\?mvn' "$dockerfile_path"; then
-        sed -i -e "s|^\s*RUN \(\(./\)\?mvn\)\(.*\)|RUN echo \"<settings><mirrors><mirror><id>mirror.default</id><url>http://$JVM_BUILD_WORKSPACE_ARTIFACT_CACHE_PORT_80_TCP_ADDR/v1/cache/default/0/</url><mirrorOf>*</mirrorOf></mirror></mirrors></settings>\" > /tmp/settings.yaml; \1 -s /tmp/settings.yaml \3|g" "$dockerfile_path"
-        touch /var/lib/containers/java
-      fi
+
+      sed -i -e "s|^\s*RUN \(\(./\)\?mvn\)\(.*\)|RUN echo \"<settings><mirrors><mirror><id>mirror.default</id><url>http://localhost:8080/main</url><mirrorOf>*</mirrorOf></mirror></mirrors></settings>\" > /tmp/settings.yaml; \1 -s /tmp/settings.yaml \3|g" "$dockerfile_path"
+      touch /var/lib/containers/java
 
       # Fixing group permission on /var/lib/containers
       chown root:root /var/lib/containers
@@ -248,6 +247,23 @@ spec:
         VOLUME_MOUNTS="${VOLUME_MOUNTS} --volume ${mount_point}:${YUM_REPOS_D_TARGET}"
       fi
 
+      ./app/domainproxy-server-runner
+
+      cat > /app/build-script.sh << EOF
+      #!/bin/sh
+      ./app/domainproxy-client-runner
+      unshare -Uf $UNSHARE_ARGS --keep-caps -r --map-users 1,1,65536 --map-groups 1,1,65536 -w ${SOURCE_CODE_DIR}/$CONTEXT -- buildah build \
+      $VOLUME_MOUNTS \
+      "${BUILDAH_ARGS[@]}" \
+      "${LABELS[@]}" \
+      --tls-verify=$TLSVERIFY --no-cache \
+      --ulimit nofile=4096:4096 \
+      -f "$dockerfile_path" -t $IMAGE .
+      EOF
+      chmod +x /app/build-script.sh
+      
+      # TODO Stop client & server and commit output SBOM.
+
       LABELS=(
         "--label" "build-date=$(date -u +'%Y-%m-%dT%H:%M:%S')"
         "--label" "architecture=$(uname -m)"
@@ -263,13 +279,7 @@ spec:
         echo "Adding the entitlement to the build"
       fi
 
-      unshare -Uf $UNSHARE_ARGS --keep-caps -r --map-users 1,1,65536 --map-groups 1,1,65536 -w ${SOURCE_CODE_DIR}/$CONTEXT -- buildah build \
-        $VOLUME_MOUNTS \
-        "${BUILDAH_ARGS[@]}" \
-        "${LABELS[@]}" \
-        --tls-verify=$TLSVERIFY --no-cache \
-        --ulimit nofile=4096:4096 \
-        -f "$dockerfile_path" -t $IMAGE .
+      ./app/build-script.sh
 
       container=$(buildah from --pull-never $IMAGE)
       buildah mount $container | tee /workspace/container_path
