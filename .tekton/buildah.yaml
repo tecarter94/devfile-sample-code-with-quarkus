@@ -247,11 +247,11 @@ spec:
         VOLUME_MOUNTS="${VOLUME_MOUNTS} --volume ${mount_point}:${YUM_REPOS_D_TARGET}"
       fi
 
-      /app/domainproxy-server-runner
+      /app/domainproxy-server-runner &
 
       cat > /app/build-script.sh << EOF
       #!/bin/sh
-      /app/domainproxy-client-runner
+      /app/domainproxy-client-runner &
       unshare -Uf $UNSHARE_ARGS --keep-caps -r --map-users 1,1,65536 --map-groups 1,1,65536 -w ${SOURCE_CODE_DIR}/$CONTEXT -- buildah build \
       $VOLUME_MOUNTS \
       "${BUILDAH_ARGS[@]}" \
