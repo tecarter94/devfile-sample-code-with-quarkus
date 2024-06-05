@@ -249,11 +249,11 @@ spec:
 
       /app/domainproxy-server-runner &
 
-      cat >/app/build-script.sh <<REMOTESSHEOF
+      cat > /app/build-script.sh << EOF
       #!/bin/sh
       /app/domainproxy-client-runner &
-      unshare -Uf $UNSHARE_ARGS --keep-caps -r --map-users 1,1,65536 --map-groups 1,1,65536 -w ${SOURCE_CODE_DIR}/$CONTEXT -- buildah build $VOLUME_MOUNTS "${BUILDAH_ARGS[@]}" "${LABELS[@]}" --tls-verify=$TLSVERIFY --no-cache --ulimit nofile=4096:4096 -f "$dockerfile_path" -t $IMAGE .
-      REMOTESSHEOF
+      buildah build $VOLUME_MOUNTS "${BUILDAH_ARGS[@]}" "${LABELS[@]}" --tls-verify=$TLSVERIFY --no-cache --ulimit nofile=4096:4096 -f "$dockerfile_path" -t $IMAGE .
+      EOF
       chmod +x /app/build-script.sh
       
       # TODO Stop client & server and commit output SBOM.
@@ -273,7 +273,7 @@ spec:
         echo "Adding the entitlement to the build"
       fi
 
-      /app/build-script.sh
+      unshare -Uf $UNSHARE_ARGS --keep-caps -r --map-users 1,1,65536 --map-groups 1,1,65536 -w ${SOURCE_CODE_DIR}/$CONTEXT -- /app/build-script.sh
 
       container=$(buildah from --pull-never $IMAGE)
       buildah mount $container | tee /workspace/container_path
