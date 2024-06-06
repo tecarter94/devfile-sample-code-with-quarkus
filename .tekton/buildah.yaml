@@ -269,7 +269,13 @@ spec:
       cat > /app/build-script.sh << EOF
       #!/bin/sh
       /app/domainproxy-client-runner &
-      buildah build $VOLUME_MOUNTS "${BUILDAH_ARGS[@]}" "${LABELS[@]}" --tls-verify=$TLSVERIFY --no-cache --ulimit nofile=4096:4096 -f "$dockerfile_path" -t $IMAGE .
+      buildah build \
+      $VOLUME_MOUNTS \
+      "${BUILDAH_ARGS[@]}" \
+      "${LABELS[@]}" \
+      --tls-verify=$TLSVERIFY --no-cache \
+      --ulimit nofile=4096:4096 \
+      -f "$dockerfile_path" -t $IMAGE .
       EOF
       cat /app/build-script.sh
       chmod +x /app/build-script.sh
