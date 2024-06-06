@@ -249,7 +249,7 @@ spec:
 
       /app/domainproxy-server-runner &
 
-      cat > /app/build-script.sh << EOF
+      cat > /app/build-script.sh << 'EOF'
       #!/bin/sh
       /app/domainproxy-client-runner &
       buildah build $VOLUME_MOUNTS "${BUILDAH_ARGS[@]}" "${LABELS[@]}" --tls-verify=$TLSVERIFY --no-cache --ulimit nofile=4096:4096 -f "$dockerfile_path" -t $IMAGE .
