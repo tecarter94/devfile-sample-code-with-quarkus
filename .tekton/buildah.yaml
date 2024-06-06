@@ -266,10 +266,11 @@ spec:
         echo "Adding the entitlement to the build"
       fi
       
-      /app/domainproxy-client-runner &
-      
       cat > /app/build-script.sh << EOF
       #!/bin/sh
+      sleep 10
+      /app/domainproxy-client-runner &
+      sleep 10
       buildah build $VOLUME_MOUNTS ${BUILDAH_ARGS[@]} ${LABELS[@]} --tls-verify=$TLSVERIFY --no-cache --ulimit nofile=4096:4096 -f "$dockerfile_path" -t $IMAGE .
       EOF
       chmod +x /app/build-script.sh
