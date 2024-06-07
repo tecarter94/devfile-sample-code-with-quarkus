@@ -302,9 +302,9 @@ spec:
       pwd
       ls
       
-      cd /workspace/source/source/
+      cd /workspace/source/source/source
       ls
-      cd /workspace/source/source/output/
+      cd /workspace/source/source/source/output/
       ls
 
       container=$(buildah from --pull-never $IMAGE)
