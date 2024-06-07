@@ -278,12 +278,14 @@ spec:
       # With expansion
       cat >> /app/build-script.sh << EOF
       buildah build $VOLUME_MOUNTS ${BUILDAH_ARGS[@]} ${LABELS[@]} --tls-verify=$TLSVERIFY --no-cache --ulimit nofile=4096:4096 -f "$dockerfile_path" -t $IMAGE .
+      pwd
+      ls
       EOF
       
       # Without expansion
       cat >> /app/build-script.sh << 'EOF'
-      kill $client_pid
-      wait $client_pid
+#      kill $client_pid
+#      wait $client_pid
       EOF
 
       cat /app/build-script.sh
@@ -291,8 +293,8 @@ spec:
 
       unshare -Uf $UNSHARE_ARGS --keep-caps -r --map-users 1,1,65536 --map-groups 1,1,65536 -w ${SOURCE_CODE_DIR}/$CONTEXT -- /app/build-script.sh
       
-      kill $server_pid
-      wait $server_pid
+#      kill $server_pid
+#      wait $server_pid
       pwd
       ls
       cat output/sbom.json
