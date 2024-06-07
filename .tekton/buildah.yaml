@@ -248,6 +248,7 @@ spec:
       fi
 
       /app/domainproxy-server-runner &
+      server_pid=$!
       
       # TODO Stop client & server and commit output SBOM.
 
@@ -275,6 +276,9 @@ spec:
       chmod +x /app/build-script.sh
 
       unshare -Uf $UNSHARE_ARGS --keep-caps -r --map-users 1,1,65536 --map-groups 1,1,65536 -w ${SOURCE_CODE_DIR}/$CONTEXT -- /app/build-script.sh
+      
+      kill $server_pid
+      cat output/sbom.json
 
       container=$(buildah from --pull-never $IMAGE)
       buildah mount $container | tee /workspace/container_path
