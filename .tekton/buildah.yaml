@@ -286,8 +286,8 @@ spec:
       cat >> /app/build-script.sh << 'EOF'
       set +e
       kill $client_pid
-      wait $client_pid
       set -e
+      wait $client_pid
       EOF
 
       cat /app/build-script.sh
@@ -297,9 +297,14 @@ spec:
       
       set +e
       kill $server_pid
-      wait $server_pid
       set -e
+      wait $server_pid
       pwd
+      ls
+      
+      cd /workspace/source/source/
+      ls
+      cd /workspace/source/source/output/
       ls
 
       container=$(buildah from --pull-never $IMAGE)
