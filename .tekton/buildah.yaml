@@ -286,8 +286,8 @@ spec:
       cat >> /app/build-script.sh << 'EOF'
       set +e
       kill $client_pid
-      set -e
       wait $client_pid
+      set -e
       EOF
 
       cat /app/build-script.sh
@@ -297,8 +297,8 @@ spec:
       
       set +e
       kill $server_pid
-      set -e
       wait $server_pid
+      set -e
       pwd
       ls
       
