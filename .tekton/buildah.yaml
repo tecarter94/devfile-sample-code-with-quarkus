@@ -283,9 +283,9 @@ spec:
       EOF
       
       # Without expansion
+      cat >> /app/build-script.sh << 'EOF'
       kill $client_pid
       wait $client_pid
-      cat >> /app/build-script.sh << 'EOF'
       EOF
 
       cat /app/build-script.sh
