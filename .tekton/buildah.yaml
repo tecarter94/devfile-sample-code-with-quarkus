@@ -301,8 +301,6 @@ spec:
       set -e
       pwd
       ls
-      
-      cat /workspace/source/source/output/sbom.json
 
       container=$(buildah from --pull-never $IMAGE)
       buildah mount $container | tee /workspace/container_path
