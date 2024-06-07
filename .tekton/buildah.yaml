@@ -280,6 +280,7 @@ spec:
       kill $server_pid
       wait $server_pid
       cat output/sbom.json
+      ls
 
       container=$(buildah from --pull-never $IMAGE)
       buildah mount $container | tee /workspace/container_path
