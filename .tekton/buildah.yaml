@@ -284,17 +284,13 @@ spec:
       
       # Without expansion
       cat >> /app/build-script.sh << 'EOF'
-#      kill $client_pid
-#      wait $client_pid
       EOF
 
       cat /app/build-script.sh
       chmod +x /app/build-script.sh
 
       unshare -Uf $UNSHARE_ARGS --keep-caps -r --map-users 1,1,65536 --map-groups 1,1,65536 -w ${SOURCE_CODE_DIR}/$CONTEXT -- /app/build-script.sh
-      
-#      kill $server_pid
-#      wait $server_pid
+
       pwd
       ls
       cat output/sbom.json
