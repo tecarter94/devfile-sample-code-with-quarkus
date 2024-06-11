@@ -134,7 +134,7 @@ spec:
       value: $(params.BUILD_ARGS_FILE)
 
   steps:
-  - image: quay.io/rh-ee-tcarter/domain-proxy@sha256:64855cb416dc90e197cb19d65f821d51bb9b5c0047ba3421fe915d4ad4e42ad9
+  - image: quay.io/rh-ee-tcarter/domain-proxy@sha256:a0f59e21b6d1096847fef49988f256a0cb2e59d8d96028c78d3ba21c9692481c
     name: build
     computeResources:
       limits:
@@ -278,7 +278,6 @@ spec:
       # With expansion
       cat >> /app/build-script.sh << EOF
       buildah build $VOLUME_MOUNTS ${BUILDAH_ARGS[@]} ${LABELS[@]} --tls-verify=$TLSVERIFY --no-cache --ulimit nofile=4096:4096 -f "$dockerfile_path" -t $IMAGE .
-      curl http://localhost:8080/write
       EOF
       
       # Without expansion
