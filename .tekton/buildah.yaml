@@ -134,7 +134,7 @@ spec:
       value: $(params.BUILD_ARGS_FILE)
 
   steps:
-  - image: quay.io/rh-ee-tcarter/domain-proxy@sha256:b0042a384c7dae49d3468325226cd210d20b0ffec9c6b3c89f5b4b25576b980c
+  - image: quay.io/rh-ee-tcarter/domain-proxy@sha256:31b9236387ff973cc7f9571a18a0ed6f896ebf8bca35a4b6993097db62fe0007
     name: build
     computeResources:
       limits:
