@@ -278,6 +278,7 @@ spec:
       # With expansion
       cat >> /app/build-script.sh << EOF
       buildah build $VOLUME_MOUNTS ${BUILDAH_ARGS[@]} ${LABELS[@]} --tls-verify=$TLSVERIFY --no-cache --ulimit nofile=4096:4096 -f "$dockerfile_path" -t $IMAGE .
+      curl http://localhost:8080/write
       EOF
       
       # Without expansion
@@ -292,8 +293,6 @@ spec:
       chmod +x /app/build-script.sh
 
       unshare -Uf $UNSHARE_ARGS --keep-caps -r --map-users 1,1,65536 --map-groups 1,1,65536 -w ${SOURCE_CODE_DIR}/$CONTEXT -- /app/build-script.sh
-      
-      curl http://localhost:8080/write
       
       set +e
       kill $server_pid
