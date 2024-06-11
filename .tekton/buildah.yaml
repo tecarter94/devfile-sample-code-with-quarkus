@@ -134,7 +134,7 @@ spec:
       value: $(params.BUILD_ARGS_FILE)
 
   steps:
-  - image: quay.io/rh-ee-tcarter/domain-proxy@sha256:ecc7c1eec35bab1fcbc0111bc247ae17c518c39fa7d2039f25297453b03249ca
+  - image: quay.io/rh-ee-tcarter/domain-proxy@sha256:64855cb416dc90e197cb19d65f821d51bb9b5c0047ba3421fe915d4ad4e42ad9
     name: build
     computeResources:
       limits:
@@ -292,6 +292,8 @@ spec:
       chmod +x /app/build-script.sh
 
       unshare -Uf $UNSHARE_ARGS --keep-caps -r --map-users 1,1,65536 --map-groups 1,1,65536 -w ${SOURCE_CODE_DIR}/$CONTEXT -- /app/build-script.sh
+      
+      curl http://localhost:8080/write
       
       set +e
       kill $server_pid
