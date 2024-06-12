@@ -134,7 +134,7 @@ spec:
       value: $(params.BUILD_ARGS_FILE)
 
   steps:
-  - image: quay.io/rh-ee-tcarter/domain-proxy@sha256:978c5e35dd6e57447f95de7cf1108088216e53eca8a270173814f6f84f3e1cc8
+  - image: quay.io/rh-ee-tcarter/domain-proxy@sha256:d5e44bd57c7963489557c016274b95659564713605183ed8affbc95a54926f56
     name: build
     computeResources:
       limits:
@@ -300,7 +300,6 @@ spec:
 
       echo "Printing SBOM:"
       cat /workspace/source/output/sbom.json
-      echo "Done printing"
 
       container=$(buildah from --pull-never $IMAGE)
       buildah mount $container | tee /workspace/container_path
