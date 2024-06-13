@@ -295,9 +295,6 @@ spec:
       kill $server_pid
       wait $server_pid
       set -e
-
-      echo "Printing SBOM:"
-      cat /workspace/source/output/sbom.json
       
       # Save the SBOM produced by the domain proxy so it can be merged into the final SBOM later
       if [ -f "/workspace/source/output/sbom.json" ]; then
