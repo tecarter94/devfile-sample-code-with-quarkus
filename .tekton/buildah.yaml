@@ -249,8 +249,6 @@ spec:
 
       /app/domainproxy-server-runner &
       server_pid=$!
-      
-      # TODO Stop client & server and commit output SBOM.
 
       LABELS=(
         "--label" "build-date=$(date -u +'%Y-%m-%dT%H:%M:%S')"
@@ -300,6 +298,11 @@ spec:
 
       echo "Printing SBOM:"
       cat /workspace/source/output/sbom.json
+      
+      # Save the SBOM produced by the domain proxy so it can be merged into the final SBOM later
+      if [ -f "/workspace/source/output/sbom.json" ]; then
+        cp /workspace/source/output/sbom.json ./sbom-domain-proxy.json
+      fi
 
       container=$(buildah from --pull-never $IMAGE)
       buildah mount $container | tee /workspace/container_path
@@ -394,6 +397,41 @@ spec:
       # write the CycloneDX unified SBOM
       with open("./sbom-cyclonedx.json", "w") as f:
         json.dump(image_sbom, f, indent=4)
+    workingDir: $(workspaces.source.path)
+    securityContext:
+      runAsUser: 0
+
+  - name: merge-domain-proxy-sbom
+    image: registry.access.redhat.com/ubi9/python-39:1-172.1712567222@sha256:c96f839e927c52990143df4efb2872946fcd5de9e1ed2014947bb2cf3084c27a
+    script: |
+      #!/bin/python3
+      import json
+
+      # load SBOMs
+      with open("./sbom-cyclonedx.json") as f:
+        cyclonedx_sbom = json.load(f)
+
+      with open("./sbom-domain-proxy.json") as f:
+        domain_proxy_sbom = json.load(f)
+
+      # fetch unique components from available SBOMs
+      def get_identifier(component):
+        return component["name"] + '@' + component.get("version", "")
+
+      cyclonedx_sbom_components = cyclonedx_sbom.get("components", [])
+      existing_components = [get_identifier(component) for component in cyclonedx_sbom_components]
+
+      domain_proxy_sbom_components = domain_proxy_sbom.get("components", [])
+      for component in domain_proxy_sbom_components:
+        if get_identifier(component) not in existing_components:
+          cyclonedx_sbom_components.append(component)
+          existing_components.append(get_identifier(component))
+
+      cyclonedx_sbom_components.sort(key=lambda c: get_identifier(c))
+
+      # write the CycloneDX unified SBOM
+      with open("./sbom-cyclonedx.json", "w") as f:
+        json.dump(cyclonedx_sbom, f, indent=4)
     workingDir: $(workspaces.source.path)
     securityContext:
       runAsUser: 0
