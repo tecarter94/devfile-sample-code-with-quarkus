@@ -134,7 +134,7 @@ spec:
       value: $(params.BUILD_ARGS_FILE)
 
   steps:
-  - image: quay.io/rh-ee-tcarter/domain-proxy@sha256:4d207aaff022ba187b980417bb2be8c4cf75d0fba5b67ddcebf006d86ae6fb0e
+  - image: quay.io/rh-ee-tcarter/domain-proxy@sha256:ad031b519611cae9db208f63238a78096e619c7ff75bdbc3dbd822da8828e114
     name: build
     computeResources:
       limits:
@@ -181,10 +181,9 @@ spec:
         echo "Cannot find Dockerfile $DOCKERFILE"
         exit 1
       fi
-      if [ -n "$JVM_BUILD_WORKSPACE_ARTIFACT_CACHE_PORT_80_TCP_ADDR" ] && grep -q '^\s*RUN \(./\)\?mvn' "$dockerfile_path"; then
-        sed -i -e "s|^\s*RUN \(\(./\)\?mvn\)\(.*\)|RUN echo \"<settings><mirrors><mirror><id>mirror.default</id><url>http://$JVM_BUILD_WORKSPACE_ARTIFACT_CACHE_PORT_80_TCP_ADDR/v1/cache/default/0/</url><mirrorOf>*</mirrorOf></mirror></mirrors></settings>\" > /tmp/settings.yaml; \1 -s /tmp/settings.yaml \3|g" "$dockerfile_path"
-        touch /var/lib/containers/java
-      fi
+
+      sed -i -e "s|^\s*RUN \(\(./\)\?mvn\)\(.*\)|RUN echo \"<settings><mirrors><mirror><id>mirror.default</id><url>http://localhost:8080/main</url><mirrorOf>*</mirrorOf></mirror></mirrors></settings>\" > /tmp/settings.yaml; \1 -s /tmp/settings.yaml \3|g" "$dockerfile_path"
+      touch /var/lib/containers/java
 
       # Fixing group permission on /var/lib/containers
       chown root:root /var/lib/containers
@@ -248,6 +247,9 @@ spec:
         VOLUME_MOUNTS="${VOLUME_MOUNTS} --volume ${mount_point}:${YUM_REPOS_D_TARGET}"
       fi
 
+      /app/domainproxy-server-runner &
+      server_pid=$!
+
       LABELS=(
         "--label" "build-date=$(date -u +'%Y-%m-%dT%H:%M:%S')"
         "--label" "architecture=$(uname -m)"
@@ -262,14 +264,42 @@ spec:
         VOLUME_MOUNTS="${VOLUME_MOUNTS} --volume /tmp/entitlement:/etc/pki/entitlement"
         echo "Adding the entitlement to the build"
       fi
+      
+      # Without expansion
+      cat > /app/build-script.sh << 'EOF'
+      #!/bin/sh
+      ip link set dev lo up
+      /app/domainproxy-client-runner &
+      client_pid=$!
+      EOF
+      
+      # With expansion
+      cat >> /app/build-script.sh << EOF
+      buildah build $VOLUME_MOUNTS ${BUILDAH_ARGS[@]} ${LABELS[@]} --tls-verify=$TLSVERIFY --no-cache --ulimit nofile=4096:4096 -f "$dockerfile_path" -t $IMAGE .
+      EOF
+      
+      # Without expansion
+      cat >> /app/build-script.sh << 'EOF'
+      set +e
+      kill $client_pid
+      wait $client_pid
+      set -e
+      EOF
 
-      unshare -Uf $UNSHARE_ARGS --keep-caps -r --map-users 1,1,65536 --map-groups 1,1,65536 -w ${SOURCE_CODE_DIR}/$CONTEXT -- buildah build \
-        $VOLUME_MOUNTS \
-        "${BUILDAH_ARGS[@]}" \
-        "${LABELS[@]}" \
-        --tls-verify=$TLSVERIFY --no-cache \
-        --ulimit nofile=4096:4096 \
-        -f "$dockerfile_path" -t $IMAGE .
+      cat /app/build-script.sh
+      chmod +x /app/build-script.sh
+
+      unshare -Uf $UNSHARE_ARGS --keep-caps -r --map-users 1,1,65536 --map-groups 1,1,65536 -w ${SOURCE_CODE_DIR}/$CONTEXT -- /app/build-script.sh
+      
+      set +e
+      kill $server_pid
+      wait $server_pid
+      set -e
+      
+      # Save the SBOM produced by the domain proxy so it can be merged into the final SBOM later
+      if [ -f "/workspace/source/output/sbom.json" ]; then
+        cp /workspace/source/output/sbom.json ./sbom-domain-proxy.json
+      fi
 
       container=$(buildah from --pull-never $IMAGE)
       buildah mount $container | tee /workspace/container_path
@@ -364,6 +394,41 @@ spec:
       # write the CycloneDX unified SBOM
       with open("./sbom-cyclonedx.json", "w") as f:
         json.dump(image_sbom, f, indent=4)
+    workingDir: $(workspaces.source.path)
+    securityContext:
+      runAsUser: 0
+
+  - name: merge-domain-proxy-sbom
+    image: registry.access.redhat.com/ubi9/python-39:1-172.1712567222@sha256:c96f839e927c52990143df4efb2872946fcd5de9e1ed2014947bb2cf3084c27a
+    script: |
+      #!/bin/python3
+      import json
+
+      # load SBOMs
+      with open("./sbom-cyclonedx.json") as f:
+        cyclonedx_sbom = json.load(f)
+
+      with open("./sbom-domain-proxy.json") as f:
+        domain_proxy_sbom = json.load(f)
+
+      # fetch unique components from available SBOMs
+      def get_identifier(component):
+        return component["name"] + '@' + component.get("version", "")
+
+      cyclonedx_sbom_components = cyclonedx_sbom.get("components", [])
+      existing_components = [get_identifier(component) for component in cyclonedx_sbom_components]
+
+      domain_proxy_sbom_components = domain_proxy_sbom.get("components", [])
+      for component in domain_proxy_sbom_components:
+        if get_identifier(component) not in existing_components:
+          cyclonedx_sbom_components.append(component)
+          existing_components.append(get_identifier(component))
+
+      cyclonedx_sbom_components.sort(key=lambda c: get_identifier(c))
+
+      # write the CycloneDX unified SBOM
+      with open("./sbom-cyclonedx.json", "w") as f:
+        json.dump(cyclonedx_sbom, f, indent=4)
     workingDir: $(workspaces.source.path)
     securityContext:
       runAsUser: 0
