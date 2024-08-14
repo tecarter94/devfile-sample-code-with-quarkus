@@ -335,7 +335,7 @@ spec:
     workingDir: $(workspaces.source.path)
 
   - name: sbom-syft-generate
-    image: quay.io/redhat-appstudio/syft:v1.2.0@sha256:f608cdf9159270124cacfb8e1b2d17fcae05dd869d1a339dd316ede8ad6e5063
+    image: quay.io/redhat-appstudio/syft:v1.2.0@sha256:f24359c201eee0c3b3d3ae4f3067ee7202f5ef8b6955ed29e143517daa3b62e2
     # Respect Syft configuration if the user has it in the root of their repository
     # (need to set the workdir, see https://github.com/anchore/syft/issues/2465)
     workingDir: $(workspaces.source.path)/source
