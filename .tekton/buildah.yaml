@@ -434,7 +434,7 @@ spec:
       runAsUser: 0
 
   - name: merge-cachi2-sbom
-    image: quay.io/redhat-appstudio/cachi2:0.7.0@sha256:1fc772aa3636fd0b43d62120d832e5913843e028e8cac42814b487c3a0a32bd8
+    image: quay.io/redhat-appstudio/cachi2:0.16.0@sha256:55415cd8ded149f5d56d3fca46d93125b86b41e07ae5d3c03caa240b7b93b7d8
     script: |
       if [ -f "sbom-cachi2.json" ]; then
         echo "Merging contents of sbom-cachi2.json into sbom-cyclonedx.json"
